@@ -1,0 +1,5 @@
+# Python dependencies for the `zotero` conda env (installed by setup.sh)
+zotero-mcp-server==0.14.1   # provides the `zotero-cli` command
+pyzotero==1.15.2            # Web API writes
+PyYAML==6.0.3               # reads ontology.yaml
+requests==2.34.2

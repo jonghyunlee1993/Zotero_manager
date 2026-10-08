@@ -1,0 +1,20 @@
+# Library-specific data: paper lists, backups, drafts, audit reports
+audit/
+report*.md
+mapped*.tsv
+*.tsv
+
+# Credentials (they belong outside the repo, see README)
+*.secret
+.env
+
+# Local Claude Code settings
+.claude/settings.local.json
+
+# OS / Python
+.DS_Store
+__pycache__/
+*.pyc
+
+# Per-user onboarding state (see CLAUDE.md "First use")
+.is_first_setting_done
