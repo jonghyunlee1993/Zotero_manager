@@ -1,4 +1,4 @@
-"""Write TL;DR child notes to Zotero (SCHEMA.md §7a-N).
+"""Write TL;DR child notes to Zotero (SCHEMA.md §5-N).
 
 - Input: TSV files with columns key, problem, method, result (an optional basis column is ignored).
 - Each item gets exactly one child note titled `TL;DR`: updated if it exists, created otherwise.

@@ -253,12 +253,9 @@ axes:
           "02": {name: aging, status: user-exception}
 
 # ─────────────────────────────────────────────────────────────
-# Collection tree (problem axis). Each paper lives in exactly one leaf. 00_Projects is cross-listing only.
+# Collection tree (problem axis). Each paper lives in exactly one leaf.
 # ─────────────────────────────────────────────────────────────
 collections:
-  00_Projects:
-    role: projects
-    children: [BatchEffectCorrection, IDEPs, MoCA]
   10_Pathology:
     children:
       11_FoundationModels:

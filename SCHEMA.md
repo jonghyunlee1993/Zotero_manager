@@ -2,7 +2,7 @@
 
 - **Version:** v1.4 (2026-10-08)
 - **Source of truth:** [`ontology.yaml`](ontology.yaml) defines the tag vocabulary, numbering, groups, collection scopes and boundaries, and domain defaults. This document explains the principles and rules behind it.
-- **Checker:** `tools/check_schema.py` (read-only, see §7).
+- **Checker:** `tools/check_schema.py` (read-only, see §6).
 
 The collection tree and vocabulary below are those of the original library (biomedical AI). The principles and rules apply to any field; the onboarding agent tailors `ontology.yaml` to a new library (see README).
 
@@ -17,7 +17,7 @@ The collection tree and vocabulary below are those of the original library (biom
 
 1. **Collections use exactly one axis:** `domain → problem` (what problem the paper tries to solve).
 2. **Method, data/modality, task, paper type and disease/biology area are tags,** never collections.
-3. **Each paper has exactly one home collection:** a single leaf of the domain tree. `00_Projects` and `00_Inbox` are exceptions (§3, §4).
+3. **Each paper has exactly one home collection:** a single leaf of the domain tree. `00_Inbox` is the only exception (§3).
 4. **No duplicate items.** To show a paper in several places, add the same item to more collections (macOS: drag adds, Cmd+drag moves).
 5. **Cross-axis views and tag groups are Saved Searches.**
 6. Deciding question: *"What problem does this paper's main contribution solve?"* → home collection. Everything else is a tag.
@@ -34,7 +34,6 @@ Scopes, exclusions and boundary rules live in the `collections` section of `onto
 
 ```
 00_Inbox                     Staging area for new papers (§3)
-00_Projects/                 Key reference sets per project (cross-listed, never copied)
 10_Pathology/
   11_FoundationModels · 12_SlideRepresentation · 13_HistologyToMolecular
   14_LanguageReportsAgents · 15_Robustness · 16_CellLevel
@@ -123,22 +122,14 @@ These tags fall below the T1 threshold but are kept at the user's request. They 
 - Drop new papers into `00_Inbox` without worrying about classification.
 - When the user asks to triage ("triage the inbox", "정리해줘"), handle each Inbox paper as follows:
   1. Read the title and abstract (the first pages of the PDF if the abstract is missing or thin).
-  2. Choose one home collection, the numbered tags and any `model:` tag. Draft the TL;DR note (§6-N).
+  2. Choose one home collection, the numbered tags and any `model:` tag. Draft the TL;DR note (§5-N).
   3. Check for duplicates. Merge them under the rules above.
-  4. For a preprint, check whether a published version exists (§6-P).
+  4. For a preprint, check whether a published version exists (§5-P).
   5. Show the change list and apply only after confirmation.
   6. Remove triaged papers from the Inbox. Never touch `/unread` or `/star`.
 - The checker counts papers that are only in the Inbox as "awaiting triage", and reports papers that have a home collection but are still in the Inbox as an error (E7).
 
-## 4. 00_Projects
-
-- Holds the key references of each project. Each item is registered **both** in its home collection and in the project collection. Never copy items.
-- A paper may not live in a project without a home collection. Set the home collection when adding it.
-- C1–C5 (split, merge, size) do not apply to projects. When a project ends, archive or delete only the collection. Papers stay in their home collections.
-
----
-
-## 5. Evolving the taxonomy
+## 4. Evolving the taxonomy
 
 ### C1. Split a collection only when **all** hold
 1. The leaf collection has **80 or more** items.
@@ -195,7 +186,7 @@ When a C1–C3 or T2 check is deliberately deferred, record the date and reason 
 
 ---
 
-## 6. Metadata maintenance
+## 5. Metadata maintenance
 
 ### P. Replacing preprints with published versions
 - **Targets:** items of type `preprint`.
@@ -224,7 +215,7 @@ When a C1–C3 or T2 check is deliberately deferred, record the date and reason 
 
 ---
 
-## 7. Checking and review cadence
+## 6. Checking and review cadence
 
 ```bash
 # Check a classification draft (and save it converted to canonical tags)
@@ -249,7 +240,7 @@ Cadence:
 
 ---
 
-## 8. Migrating an existing library to this schema
+## 7. Migrating an existing library to this schema
 
 The order that worked for the original library. Every step that writes to the library shows its change list first and waits for confirmation. Keep drafts, backups and reports under `audit/<date>_<step>/` (git-ignored).
 
@@ -262,5 +253,5 @@ The order that worked for the original library. Every step that writes to the li
 | 4 | Run `check_schema.py --live` until it reports 0 errors, then delete `_old` |
 | 5 | Remove automatic tags (excluding `/unread`, `/star`) and turn off auto-tagging |
 | 6 | Create Saved Searches: one per group code (`xx00`), plus cross views as needed |
-| 7 | Optional: replace preprints with published versions (§6-P) |
-| 8 | Optional: write TL;DR notes (§6-N) |
+| 7 | Optional: replace preprints with published versions (§5-P) |
+| 8 | Optional: write TL;DR notes (§5-N) |

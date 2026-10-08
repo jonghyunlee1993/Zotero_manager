@@ -62,7 +62,7 @@ claude
 - **Environment:** the session hook sources `tools/env.sh` for every command, so the agent runs inside the conda env with your credentials loaded. You do not need to activate anything yourself.
 - **First session:** `.is_first_setting_done` does not exist yet, so the agent asks whether to tailor the ontology to your library.
   - If you say yes, the `ontology-tailor` subagent reads your library (read-only) and writes a proposal to `audit/onboarding/`. You review it with the agent, and it then updates `ontology.yaml` and `SCHEMA.md`.
-  - If you choose, the agent can then migrate your library step by step ([SCHEMA.md §8](SCHEMA.md#8-migrating-an-existing-library-to-this-schema)). Each step waits for your confirmation.
+  - If you choose, the agent can then migrate your library step by step ([SCHEMA.md §7](SCHEMA.md#7-migrating-an-existing-library-to-this-schema)). Each step waits for your confirmation.
   - The flag file is git-ignored, so every clone runs its own onboarding.
 - **Day to day:** drop new papers into `00_Inbox` and ask the agent to "triage the inbox". It proposes a home collection, tags, a TL;DR note and duplicate or preprint fixes, and applies them after you confirm.
 - **Quarterly:** ask for a schema check. The agent runs the checker and proposes splits, merges or new tags according to the rules.

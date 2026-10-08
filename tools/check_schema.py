@@ -40,11 +40,8 @@ class Ontology:
         self.tag_alias = la.get("tags", {}) or {}
         self.coll_alias = la.get("collections", {}) or {}
         # collections: leaf → domain
-        self.coll_leaf, self.projects = {}, set()
+        self.coll_leaf = {}
         for dom, dd in o["collections"].items():
-            if dd.get("role") == "projects":
-                self.projects |= set(dd.get("children", []))
-                continue
             kids = dd.get("children")
             if kids:
                 for leaf in kids:
@@ -131,7 +128,7 @@ def load_live(ont):
             if ont.inbox and p[0] == ont.inbox:
                 projects.append(p[0]); inbox = True
                 continue
-            (projects if p[0] == "00_Projects" else homes).append(p[-1])
+            homes.append(p[-1])
         tags = [t["tag"] for t in d.get("tags", [])]
         items.append(dict(key=it["key"], title=d.get("title", "")[:60], homes=homes, projects=projects,
                           raw_tags=[t for t in tags if TAG_RE.match(t) or MODEL_RE.match(t) or t in ont.protected],
