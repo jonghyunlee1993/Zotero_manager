@@ -3,7 +3,7 @@
 Keep a Zotero library organized with a small, explicit taxonomy and an AI agent ([Claude Code](https://claude.com/claude-code)) that does the tedious parts: classifying new papers, tagging, merging duplicates, writing TL;DR notes, and checking that everything still follows the rules.
 
 - **One home collection per paper**, organized by *domain → problem*.
-- **Everything else is a numbered tag**: method `m:`, data `d:`, task `t:`, paper type `type:`, area `a:`, plus `model:<name>` for the model a paper proposes and `lab:<PI surname>` for listed labs whose PI is an author.
+- **Everything else is a tag** in a two-level hierarchy (a child tag like `m:GAN` always comes with its parent `m:generative`): method `m:`, data `d:`, task `t:`, paper type `type:`, area `a:`, plus `model:<name>` for the model a paper proposes and `lab:<PI surname>` for listed labs whose PI is an author.
 - **Rules for growing the taxonomy**: when to split or merge collections, when to add or promote tags. A checker script enforces them.
 - **Safe by default**: the agent shows every change before it touches the library and never touches your `/unread` and `/star` tags.
 

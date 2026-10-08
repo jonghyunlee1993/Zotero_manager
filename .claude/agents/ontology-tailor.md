@@ -21,8 +21,8 @@ You draft a tailored taxonomy for the user's Zotero library. You only **read** t
 ## Procedure
 1. Profile the library: item count, item types, the existing collection tree with item counts, the most frequent tags, and a reading of all titles (abstracts for a sample of at least 150 items, or all if fewer).
 2. Identify the research **domains** (top-level collections, at most ~6 plus `90_Methods` if general-method papers are common) and, within each, the **problems** (leaf collections). Apply C1–C5: leaves of at least ~5 papers; split only on problems; one `x9_General` per domain; at most 3 levels.
-3. Build the tag vocabulary per axis (`m:` method, `d:` data/modality, `t:` task, `type:` paper type, `a:` area). Apply T1 (≥ 5 papers, grouped) and T5 (domain defaults at ≥ 70%). Reuse groups and names from the example ontology wherever they fit; renumber freely.
-4. Keep these unchanged: `protected_tags`, `open_axes.model`, `inbox: 00_Inbox`, `limits`, and the tag format `<axis>:<GGLL> <name>`. Keep any of the user's existing tags or collections that already work, and map the rest in `legacy_aliases` (old name → new name, or null to drop).
+3. Build the tag vocabulary per axis (`m:` method, `d:` data/modality, `t:` task, `type:` paper type, `a:` area). Apply T1 (≥ 5 papers, grouped) and T5 (domain defaults at ≥ 70%). Reuse groups and names from the example ontology wherever they fit. Each group is a parent tag, so keep group and tag names unique within an axis.
+4. Keep these unchanged: `protected_tags`, `open_axes.model`, `inbox: 00_Inbox`, `limits`, the tag format `<axis>:<name>` (no numbers) and the parent → child rule (H1). Keep any of the user's existing tags or collections that already work, and map the rest in `legacy_aliases` (old name → new name, or null to drop).
 5. Assign every top-level item a draft home collection and tags in a TSV (`key`, `short_title`, `home_collection`, `tags` with `" | "` separators, `fit` = good/forced/none).
 6. Validate: `python3 tools/check_schema.py --ontology <proposed yaml> --draft <tsv> --out <report>`. Fix the ontology until there are no E-errors that a vocabulary change can fix, and report the rest.
 

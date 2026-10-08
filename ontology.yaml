@@ -1,28 +1,29 @@
 # Zotero library ontology: the single source of truth for the tag vocabulary and the collection tree.
 # The rules are explained in SCHEMA.md. When you change this file, add an entry to the SCHEMA.md changelog.
-version: "1.5"
+version: "1.6"
 updated: 2026-10-08
 
 # ─────────────────────────────────────────────────────────────
-# Tag format: "<axis>:<GGLL> <name>"   e.g. m:1104 GAN
-#   GG = group number within the axis (10–98; 99 = standalone tags without a group)
-#   LL = tag number within the group (01–99). LL=00 denotes the group itself and is never applied
-#        as a tag (it exists only as a Saved Search of the same name, e.g. "m:1100 generative").
-# Numbers are sparse to avoid renumbering. When a tag moves, rename it in Zotero with "Rename Tag".
+# Tag format: "<axis>:<name>"   e.g. m:GAN, d:H&E, type:review   (no numbers)
+#   A tag listed under a group is a child tag; the group name is its parent tag (e.g. m:generative).
+#   Hierarchy rule (H1): a paper carrying a child tag must also carry its parent tag.
+#     m:GAN → also m:generative. A parent tag alone is allowed when no child fits.
+#   Tags under `ungrouped` have no parent. Group and tag names must be unique within an axis.
+#   When a tag moves to another group, swap the parent tag on its papers.
 # status: active | user-exception (below the T1 threshold but kept at the user's request; exempt from T3 pruning)
 # ─────────────────────────────────────────────────────────────
 
 # Never add, remove, rename or delete these; always excluded from bulk operations.
 protected_tags: ["/unread", "/star"]
 
-# Open-vocabulary axes (unnumbered): values are not fixed in advance.
+# Open-vocabulary axes: values are not fixed in advance.
 open_axes:
   model:
     format: "model:<official name>"     # e.g. model:TITAN, model:CONCH, model:CHIEF
     limit: [0, 2]
     rule: "Apply only when the paper itself proposes the model or tool and its official name appears in the title or abstract. Do not tag baselines used for evaluation. Dataset and benchmark names are not models. Keep the paper's spelling and replace spaces with hyphens"
 
-# Lab axis (closed vocabulary, unnumbered): only the labs listed here, named by the PI's surname.
+# Lab axis (closed vocabulary): only the labs listed here, named by the PI's surname.
 labs:
   format: "lab:<PI surname>"
   limit: [0, 3]
@@ -37,7 +38,7 @@ labs:
 
 inbox: 00_Inbox       # Staging collection for new papers. Triage moves papers out of it
 
-limits:        # tags per paper (any axis may be empty, but at least 1 in total; an omitted domain default counts as 1)
+limits:        # tags per paper, parent tags not counted (any axis may be empty, but at least 1 in total; an omitted domain default counts as 1)
   m: [0, 3]
   d: [0, 3]
   t: [0, 2]
@@ -45,225 +46,159 @@ limits:        # tags per paper (any axis may be empty, but at least 1 in total;
   a: [0, 2]
   min_total: 1
 
-defaults:      # Domain defaults: omitted on papers whose home collection is in that domain (rule T5)
-  10_Pathology: ["d:1001 H&E"]
-  30_Molecules_Drugs: ["d:1401 molecule"]
-  50_BioSequenceFMs: ["d:1402 protein"]
+defaults:      # Domain defaults: omitted on papers whose home collection is in that domain (rule T5), together with their parent tag
+  10_Pathology: ["d:H&E"]
+  30_Molecules_Drugs: ["d:molecule"]
+  50_BioSequenceFMs: ["d:protein"]
 
 axes:
   m:
     name: method
     groups:
-      "10":
-        name: representation-learning
-        tags:
-          "01": {name: SSL, def: "self-supervised pretraining (MIM etc.)"}
-          "02": {name: contrastive, def: "contrastive learning, including cross-modal alignment"}
-          "03": {name: JEPA, def: "joint-embedding predictive architectures"}
-          "04": {name: distillation, def: "knowledge distillation"}
-      "11":
-        name: generative
-        tags:
-          "01": {name: diffusion}
-          "02": {name: flow-matching}
-          "03": {name: VAE}
-          "04": {name: GAN, status: user-exception}
-      "12":
-        name: adaptation-setting
-        tags:
-          "01": {name: fine-tuning, def: "full fine-tuning, PEFT, adapters"}
-          "02": {name: prompt-learning, def: "prompt tuning for vision/CLIP-style models (LLM prompting is m:1601 LLM)"}
-          "03": {name: few-shot}
-          "04": {name: domain-adaptation, def: "domain adaptation, test-time adaptation, continual learning"}
-          "05": {name: federated}
-      "13":
-        name: set-aggregation
-        tags:
-          "01": {name: MIL}
-          "02": {name: prototype}
-      "14":
-        name: graph
-        tags:
-          "01": {name: GNN}
-          "02": {name: hypergraph}
-      "15":
-        name: architecture
-        tags:
-          "01": {name: attention, def: "only when the attention/transformer mechanism itself is the contribution (merely using a transformer gets no tag)"}
-          "02": {name: MoE}
-          "03": {name: state-space}
-          "04": {name: hyperbolic, def: "hyperbolic geometry representations (not hypergraphs)"}
-      "16":
-        name: language-models
-        tags:
-          "01": {name: LLM, def: "LLMs and domain language models (including chemical and protein LMs)"}
-          "02": {name: VLM}
-          "03": {name: agent}
-      "17":
-        name: multimodal
-        tags:
-          "01": {name: multimodal-fusion}
-          "02": {name: OT, def: "optimal transport"}
-      "18":
-        name: decision-causal
-        tags:
-          "01": {name: RL}
-          "02": {name: causal-inference}
-      "19":
-        name: interpretability-methods
-        tags:
-          "01": {name: SAE}
-          "02": {name: concept, status: user-exception, def: "concept-based explanation, concept bottlenecks"}
-      "20":
-        name: data-centric
-        tags:
-          "01": {name: data-augmentation, status: user-exception, def: "data augmentation, mixup, training with synthetic data"}
-          "02": {name: noisy-imbalanced-labels, status: user-exception, def: "label noise, class imbalance, weak labels"}
-      "99":
-        name: ungrouped
-        tags:
-          "01": {name: ensemble}
+      representation-learning:
+        SSL: {def: "self-supervised pretraining (MIM etc.)"}
+        contrastive: {def: "contrastive learning, including cross-modal alignment"}
+        JEPA: {def: "joint-embedding predictive architectures"}
+        distillation: {def: "knowledge distillation"}
+      generative:
+        diffusion: {}
+        flow-matching: {}
+        VAE: {}
+        GAN: {status: user-exception}
+      adaptation-setting:
+        fine-tuning: {def: "full fine-tuning, PEFT, adapters"}
+        prompt-learning: {def: "prompt tuning for vision/CLIP-style models (LLM prompting is m:LLM)"}
+        few-shot: {}
+        domain-adaptation: {def: "domain adaptation, test-time adaptation, continual learning"}
+        federated: {}
+      set-aggregation:
+        MIL: {}
+        prototype: {}
+      graph:
+        GNN: {}
+        hypergraph: {}
+      architecture:
+        attention: {def: "only when the attention/transformer mechanism itself is the contribution (merely using a transformer gets no tag)"}
+        MoE: {}
+        state-space: {}
+        hyperbolic: {def: "hyperbolic geometry representations (not hypergraphs)"}
+      language-models:
+        LLM: {def: "LLMs and domain language models (including chemical and protein LMs)"}
+        VLM: {}
+        agent: {}
+      multimodal:
+        multimodal-fusion: {}
+        OT: {def: "optimal transport"}
+      decision-causal:
+        RL: {}
+        causal-inference: {}
+      interpretability-methods:
+        SAE: {}
+        concept: {status: user-exception, def: "concept-based explanation, concept bottlenecks"}
+      data-centric:
+        data-augmentation: {status: user-exception, def: "data augmentation, mixup, training with synthetic data"}
+        noisy-imbalanced-labels: {status: user-exception, def: "label noise, class imbalance, weak labels"}
+    ungrouped:
+      ensemble: {}
 
   d:
     name: data / modality
     groups:
-      "10":
-        name: tissue-imaging
-        tags:
-          "01": {name: H&E, def: "domain default in 10_Pathology, so not applied there"}
-          "02": {name: IHC}
-          "03": {name: 3D-pathology}
-          "04": {name: cytology, status: user-exception, def: "cytopathology and smears (including blood smears)"}
-      "11":
-        name: spatial-omics
-        tags:
-          "01": {name: ST, def: "spatial transcriptomics"}
-          "02": {name: spatial-proteomics, def: "mIF, CODEX, IMC, CyCIF"}
-      "12":
-        name: single-cell
-        tags:
-          "01": {name: scRNA, def: "scRNA-seq, including multiome and ATAC"}
-          "02": {name: cytometry}
-      "13":
-        name: bulk-molecular
-        tags:
-          "01": {name: bulk-RNA}
-          "02": {name: methylation}
-          "03": {name: proteomics, def: "protein abundance measurements (plasma, MS). Sequences and structures are d:1402 protein"}
-          "04": {name: genomics, def: "DNA sequence, variant panels, somatic variants"}
-          "05": {name: genotype, def: "GWAS, PRS, germline variants"}
-      "14":
-        name: molecules-proteins
-        tags:
-          "01": {name: molecule, def: "domain default in 30_Molecules_Drugs"}
-          "02": {name: protein, def: "protein sequence and structure. Domain default in 50_BioSequenceFMs"}
-      "15":
-        name: clinical
-        tags:
-          "01": {name: clinical, def: "EHR, clinical variables, claims and diagnosis codes"}
-          "02": {name: time-series, status: user-exception, def: "clinical, wearable and physiological signal time series"}
-      "16":
-        name: general-imaging
-        tags:
-          "01": {name: image, def: "natural / general images"}
-          "02": {name: medical-image, def: "non-pathology medical imaging (radiology, endoscopy, dermatology)"}
-      "17":
-        name: structured-language
-        tags:
-          "01": {name: text, def: "only when natural language is a central input or output (not mere prompting)"}
-          "02": {name: tabular}
-          "03": {name: graph, status: user-exception, def: "graph-structured data"}
-          "04": {name: knowledge-graph}
+      tissue-imaging:
+        "H&E": {def: "domain default in 10_Pathology, so not applied there"}
+        IHC: {}
+        "3D-pathology": {}
+        cytology: {status: user-exception, def: "cytopathology and smears (including blood smears)"}
+      spatial-omics:
+        ST: {def: "spatial transcriptomics"}
+        spatial-proteomics: {def: "mIF, CODEX, IMC, CyCIF"}
+      single-cell:
+        scRNA: {def: "scRNA-seq, including multiome and ATAC"}
+        cytometry: {}
+      bulk-molecular:
+        bulk-RNA: {}
+        methylation: {}
+        proteomics: {def: "protein abundance measurements (plasma, MS). Sequences and structures are d:protein"}
+        genomics: {def: "DNA sequence, variant panels, somatic variants"}
+        genotype: {def: "GWAS, PRS, germline variants"}
+      molecules-proteins:
+        molecule: {def: "domain default in 30_Molecules_Drugs"}
+        protein: {def: "protein sequence and structure. Domain default in 50_BioSequenceFMs"}
+      clinical-data:
+        clinical: {def: "EHR, clinical variables, claims and diagnosis codes"}
+        time-series: {status: user-exception, def: "clinical, wearable and physiological signal time series"}
+      general-imaging:
+        image: {def: "natural / general images"}
+        medical-image: {def: "non-pathology medical imaging (radiology, endoscopy, dermatology)"}
+      structured-language:
+        text: {def: "only when natural language is a central input or output (not mere prompting)"}
+        tabular: {}
+        graph: {status: user-exception, def: "graph-structured data"}
+        knowledge-graph: {}
 
   t:
     name: task
     groups:
-      "10":
-        name: molecular-prediction
-        tags:
-          "01": {name: expr-prediction, def: "gene expression / ST prediction"}
-          "02": {name: biomarker-prediction, def: "mutation, MSI, TMB, molecular subtype, methylation status prediction"}
-      "11":
-        name: batch-effect
-        tags:
-          "01": {name: batch-correction, def: "correcting or evaluating batch, scanner and site differences"}
-          "02": {name: stain-normalization, status: user-exception, def: "stain normalization and separation. Query together with the group search t:1100 batch-effect"}
-      "12":
-        name: clinical-prediction
-        tags:
-          "01": {name: classification, def: "diagnosis, subtyping. Not applied when any more specific t: tag applies"}
-          "02": {name: survival, def: "time-to-event analysis"}
-          "03": {name: risk-prediction, def: "predicting disease onset or clinical outcomes (not time-to-event)"}
-          "04": {name: treatment-response}
-          "05": {name: treatment-policy, def: "treatment policy optimization, treatment effect estimation"}
-      "13":
-        name: synthesis-reconstruction
-        tags:
-          "01": {name: generation}
-          "02": {name: virtual-staining}
-          "03": {name: super-resolution}
-          "04": {name: compression}
-      "14":
-        name: cell-tissue-analysis
-        tags:
-          "01": {name: segmentation, def: "segmentation, detection"}
-          "02": {name: cell-annotation, def: "cell-type labelling, gating"}
-          "03": {name: registration, status: user-exception, def: "image registration (slide-to-slide, cross-modality)"}
-      "15":
-        name: omics-analysis
-        tags:
-          "01": {name: integration}
-          "02": {name: deconvolution}
-          "03": {name: perturbation}
-          "04": {name: GRN, status: user-exception, def: "gene regulatory network inference"}
-      "16":
-        name: molecular-design
-        tags:
-          "01": {name: mol-optimization}
-          "02": {name: binding}
-          "03": {name: property-prediction, def: "molecule / protein property prediction"}
-      "17":
-        name: language-tasks
-        tags:
-          "01": {name: report-gen}
-          "02": {name: VQA}
-          "03": {name: retrieval}
-          "04": {name: reasoning}
-      "18":
-        name: trustworthiness
-        tags:
-          "01": {name: uncertainty, status: user-exception, def: "uncertainty, calibration"}
-          "02": {name: interpretability}
-          "03": {name: fairness, status: user-exception, def: "fairness, demographic bias, confounding bias"}
-      "99":
-        name: ungrouped
-        tags:
-          "01": {name: representation, def: "general-purpose representation / FM pretraining as the goal itself"}
-          "02": {name: anomaly-detection, status: user-exception, def: "anomaly and out-of-distribution detection"}
+      molecular-prediction:
+        expr-prediction: {def: "gene expression / ST prediction"}
+        biomarker-prediction: {def: "mutation, MSI, TMB, molecular subtype, methylation status prediction"}
+      batch-effect:
+        batch-correction: {def: "correcting or evaluating batch, scanner and site differences"}
+        stain-normalization: {status: user-exception, def: "stain normalization and separation"}
+      clinical-prediction:
+        classification: {def: "diagnosis, subtyping. Not applied when any more specific t: tag applies"}
+        survival: {def: "time-to-event analysis"}
+        risk-prediction: {def: "predicting disease onset or clinical outcomes (not time-to-event)"}
+        treatment-response: {}
+        treatment-policy: {def: "treatment policy optimization, treatment effect estimation"}
+      synthesis-reconstruction:
+        generation: {}
+        virtual-staining: {}
+        super-resolution: {}
+        compression: {}
+      cell-tissue-analysis:
+        segmentation: {def: "segmentation, detection"}
+        cell-annotation: {def: "cell-type labelling, gating"}
+        registration: {status: user-exception, def: "image registration (slide-to-slide, cross-modality)"}
+      omics-analysis:
+        integration: {}
+        deconvolution: {}
+        perturbation: {}
+        GRN: {status: user-exception, def: "gene regulatory network inference"}
+      molecular-design:
+        mol-optimization: {}
+        binding: {}
+        property-prediction: {def: "molecule / protein property prediction"}
+      language-tasks:
+        report-gen: {}
+        VQA: {}
+        retrieval: {}
+        reasoning: {}
+      trustworthiness:
+        uncertainty: {status: user-exception, def: "uncertainty, calibration"}
+        interpretability: {}
+        fairness: {status: user-exception, def: "fairness, demographic bias, confounding bias"}
+    ungrouped:
+      representation: {def: "general-purpose representation / FM pretraining as the goal itself"}
+      anomaly-detection: {status: user-exception, def: "anomaly and out-of-distribution detection"}
 
   type:
     name: paper type (omitted for ordinary method papers)
-    groups:
-      "10":
-        name: paper-type
-        tags:
-          "01": {name: review}
-          "02": {name: perspective}
-          "03": {name: benchmark}
-          "04": {name: dataset}
-          "05": {name: tool}
-          "06": {name: analysis, def: "analyzes or evaluates existing models/data without a new method (including LLM reliability and pitfall studies)"}
-          "07": {name: clinical-validation, status: user-exception, def: "clinical, multi-site or prospective validation"}
-          "08": {name: non-ML, def: "non-ML biological or clinical research (cohorts, association studies, experimental techniques)"}
+    ungrouped:
+      review: {}
+      perspective: {}
+      benchmark: {}
+      dataset: {}
+      tool: {}
+      analysis: {def: "analyzes or evaluates existing models/data without a new method (including LLM reliability and pitfall studies)"}
+      clinical-validation: {status: user-exception, def: "clinical, multi-site or prospective validation"}
+      non-ML: {def: "non-ML biological or clinical research (cohorts, association studies, experimental techniques)"}
 
   a:
     name: disease / biology area (optional; no oncology tag since it is the default)
-    groups:
-      "10":
-        name: biology-area
-        tags:
-          "01": {name: immunology}
-          "02": {name: aging, status: user-exception}
+    ungrouped:
+      immunology: {}
+      aging: {status: user-exception}
 
 # ─────────────────────────────────────────────────────────────
 # Collection tree (problem axis). Each paper lives in exactly one leaf.
@@ -293,9 +228,9 @@ collections:
         excludes: ["super-resolution of molecular maps → 13", "retrained or distilled FMs → 11"]
       18_DataBenchmarks:
         scope: "General-purpose datasets, benchmarks and resources not tied to one problem"
-        excludes: ["benchmark for a specific problem → that problem's collection + type:1003 benchmark"]
+        excludes: ["benchmark for a specific problem → that problem's collection + type:benchmark"]
       19_General:
-        scope: "Domain-wide reviews and perspectives, experimental techniques and resources (type:1008 non-ML / type:1005 tool), papers that fit no specific problem (anomaly detection, aging clocks, etc.)"
+        scope: "Domain-wide reviews and perspectives, experimental techniques and resources (type:non-ML / type:tool), papers that fit no specific problem (anomaly detection, aging clocks, etc.)"
   20_SingleCell_Spatial:
     children:
       21_FoundationModels:
@@ -339,69 +274,68 @@ collections:
         excludes: ["pathology-specific → 14", "EHR / population data → 40", "one domain's data only → that domain"]
       99_General:
         scope: "Other ML: theory, Bayesian methods, uncertainty, label noise, tabular, XAI, general RL, general algorithms (clustering etc.)"
-    note_interpretability: "Model interpretation / explanation studies go in the collection of the model being interpreted, with t:1802 interpretability (e.g. pathology FM interpretation → 11, MIL explanation → 12). No separate collection"
-    note: "Non-pathology medical imaging (radiology, endoscopy, dermatology) is placed by method in 9x with d:1602 medical-image until it gets its own domain (C4: 30 papers)"
+    note_interpretability: "Model interpretation / explanation studies go in the collection of the model being interpreted, with t:interpretability (e.g. pathology FM interpretation → 11, MIL explanation → 12). No separate collection"
+    note: "Non-pathology medical imaging (radiology, endoscopy, dermatology) is placed by method in 9x with d:medical-image until it gets its own domain (C4: 30 papers)"
 
 # ─────────────────────────────────────────────────────────────
 # Recorded rule-check decisions: the checker shows these whenever it flags the same target again.
 # ─────────────────────────────────────────────────────────────
 reviews:
   - {rule: C1, target: 13_HistologyToMolecular, date: 2026-10-08, result: hold,
-     reason: "8 of the 43 expression-prediction papers overlap with survival/biomarker work, so boundary clarity is 81% < 90%. Use the t:1001 expr-prediction tag instead"}
+     reason: "8 of the 43 expression-prediction papers overlap with survival/biomarker work, so boundary clarity is 81% < 90%. Use the t:expr-prediction tag instead"}
   - {rule: C2, target: 29_General, date: 2026-10-08, result: hold,
      reason: "Largest sub-bundle (cell-state analysis) is about 11 papers < 15. Consider 25_CellState at 15"}
   - {rule: C2, target: 39_General, date: 2026-10-08, result: hold, reason: "No sub-bundle reaches 15 papers"}
   - {rule: C2, target: 99_General, date: 2026-10-08, result: hold, reason: "Largest sub-bundle is 4 papers"}
   - {rule: C3, target: 24_Perturbation_VirtualCell, date: 2026-10-08, result: hold,
      reason: "3-month grace period for a new collection. Merge into 21 or 29 if still below 5 afterwards"}
-  - {rule: T2, target: "d:1701 text", date: 2026-10-08, result: hold, reason: "Narrowed the definition and re-tagged (147 → 107). No sub-type worth filtering"}
-  - {rule: T2, target: "t:1201 classification", date: 2026-10-08, result: hold, reason: "Reduced by the rule that it applies only when no more specific t: tag does"}
-  - {rule: T2, target: "m:1601 LLM", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "m:1602 VLM", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "d:1101 ST", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "m:1001 SSL", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "m:1301 MIL", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "t:1202 survival", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "m:1002 contrastive", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "t:1001 expr-prediction", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "d:1201 scRNA", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "d:1601 image", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "t:9901 representation", date: 2026-10-08, result: hold, reason: "The cross-domain FM view is the point of this tag. Collections 11/21/50 already split it"}
-  - {rule: T2, target: "m:1701 multimodal-fusion", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
-  - {rule: T2, target: "m:1201 fine-tuning", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "d:text", date: 2026-10-08, result: hold, reason: "Narrowed the definition and re-tagged (147 → 107). No sub-type worth filtering"}
+  - {rule: T2, target: "t:classification", date: 2026-10-08, result: hold, reason: "Reduced by the rule that it applies only when no more specific t: tag does"}
+  - {rule: T2, target: "m:LLM", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "m:VLM", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "d:ST", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "m:SSL", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "m:MIL", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "t:survival", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "m:contrastive", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "t:expr-prediction", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "d:scRNA", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "d:image", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "t:representation", date: 2026-10-08, result: hold, reason: "The cross-domain FM view is the point of this tag. Collections 11/21/50 already split it"}
+  - {rule: T2, target: "m:multimodal-fusion", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
+  - {rule: T2, target: "m:fine-tuning", date: 2026-10-08, result: hold, reason: "No sub-type worth filtering"}
 
 # ─────────────────────────────────────────────────────────────
 # Migration aliases: tag and collection names from earlier drafts → current names.
+# Numbered tags from v1.1–v1.5 ("m:1104 GAN") are mapped automatically by dropping the number.
 # null = dropped (not tagged). Used by `check_schema.py --draft`. Can be removed once no old drafts remain.
 # ─────────────────────────────────────────────────────────────
 legacy_aliases:
   tags:
-    "d:mIF": "d:1102 spatial-proteomics"
-    "d:spatial-proteomics": "d:1102 spatial-proteomics"
-    "d:EHR": "d:1501 clinical"
-    "d:clinical": "d:1501 clinical"
-    "d:GWAS": "d:1305 genotype"
-    "d:wearable-signal": "d:1502 time-series"
-    "d:radiology": "d:1602 medical-image"
-    "t:representation-learning": "t:9901 representation"
-    "t:evaluation": "type:1006 analysis"
-    "t:detection": "t:1401 segmentation"
-    "t:image-translation": "t:1301 generation"
+    "d:mIF": "d:spatial-proteomics"
+    "d:EHR": "d:clinical"
+    "d:GWAS": "d:genotype"
+    "d:wearable-signal": "d:time-series"
+    "d:radiology": "d:medical-image"
+    "t:representation-learning": "t:representation"
+    "t:evaluation": "type:analysis"
+    "t:detection": "t:segmentation"
+    "t:image-translation": "t:generation"
     "t:policy-learning": null
-    "t:treatment-effect": "t:1205 treatment-policy"
-    "type:empirical-study": "type:1008 non-ML"
-    "type:wet-lab": "type:1008 non-ML"
-    "m:concept-based": "m:1902 concept"
-    "m:concept-bottleneck": "m:1902 concept"
+    "t:treatment-effect": "t:treatment-policy"
+    "type:empirical-study": "type:non-ML"
+    "type:wet-lab": "type:non-ML"
+    "m:concept-based": "m:concept"
+    "m:concept-bottleneck": "m:concept"
     "m:autoencoder": null
     "m:transformer": null
-    "m:language-model": "m:1601 LLM"
-    "m:alignment": "m:1002 contrastive"
-    "m:continual-learning": "m:1204 domain-adaptation"
+    "m:language-model": "m:LLM"
+    "m:alignment": "m:contrastive"
+    "m:continual-learning": "m:domain-adaptation"
     "t:language-modeling": null
     "d:multi-omics": null
-    "t:calibration": "t:1801 uncertainty"
-    "t:batch-effect": "t:1101 batch-correction"
+    "t:calibration": "t:uncertainty"
+    "t:batch-effect": "t:batch-correction"
   collections:
     "91_Architectures_SSL": "91_Architectures_SSL_Generative"
     "93_LLM_Agents": "93_LLMs"

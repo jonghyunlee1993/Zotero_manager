@@ -13,7 +13,8 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
-TAG_RE = re.compile(r"^(m|d|t|type|a):(\d{2})(\d{2}) (.+)$")
+TAG_RE = re.compile(r"^(m|d|t|type|a):(.+)$")
+NUMBERED_RE = re.compile(r"^(m|d|t|type|a):\d{4} (.+)$")   # v1.1–v1.5 format, e.g. "m:1104 GAN"
 MODEL_RE = re.compile(r"^model:\S+$")
 LAB_RE = re.compile(r"^lab:\S+$")
 API = "http://localhost:23119/api/users/0"
@@ -28,15 +29,22 @@ class Ontology:
         self.protected = set(o["protected_tags"])
         self.limits = o["limits"]
         self.defaults = {k: set(v) for k, v in o["defaults"].items()}
-        self.leaf, self.groups, self.by_name = {}, {}, {}
+        # leaf: child and ungrouped tags → meta (parent = parent tag or None); groups: parent tag → axis
+        self.leaf, self.groups = {}, {}
+        def add(full, meta):
+            if full in self.leaf or full in self.groups:
+                sys.exit(f"ontology: duplicate tag name {full}")
+            self.leaf[full] = meta
         for ax, axd in o["axes"].items():
-            for gg, g in axd["groups"].items():
-                self.groups[f"{ax}:{gg}00 {g['name']}"] = (ax, gg)
-                for ll, t in g["tags"].items():
-                    full = f"{ax}:{gg}{ll} {t['name']}"
-                    self.leaf[full] = dict(axis=ax, group=g["name"], name=t["name"],
-                                           status=t.get("status", "active"))
-                    self.by_name[f"{ax}:{t['name']}"] = full
+            for gname, tags in (axd.get("groups") or {}).items():
+                parent = f"{ax}:{gname}"
+                if parent in self.leaf or parent in self.groups:
+                    sys.exit(f"ontology: duplicate tag name {parent}")
+                self.groups[parent] = ax
+                for name, t in tags.items():
+                    add(f"{ax}:{name}", dict(axis=ax, parent=parent, status=(t or {}).get("status", "active")))
+            for name, t in (axd.get("ungrouped") or {}).items():
+                add(f"{ax}:{name}", dict(axis=ax, parent=None, status=(t or {}).get("status", "active")))
         la = o.get("legacy_aliases", {})
         self.tag_alias = la.get("tags", {}) or {}
         self.coll_alias = la.get("collections", {}) or {}
@@ -58,7 +66,8 @@ class Ontology:
         self.lab_limit = labs.get("limit", [0, 3])[1]
 
     def norm_tag(self, raw):
-        """raw tag → (canonical tag | None, status). status: ok|alias|dropped|unknown|group|protected|model|lab"""
+        """raw tag → (canonical tag | None, status).
+        status: ok|group|numbered|alias|dropped|unknown|protected|model|lab"""
         t = raw.strip().lstrip("+").strip()
         if not t:
             return None, "empty"
@@ -72,8 +81,11 @@ class Ontology:
             return t, "ok"
         if t in self.groups:
             return t, "group"
-        if t in self.by_name:
-            return self.by_name[t], "ok"
+        m = NUMBERED_RE.match(t)
+        if m:
+            new = f"{m[1]}:{m[2]}"
+            if new in self.leaf or new in self.groups:
+                return new, "numbered"
         if t in self.tag_alias:
             v = self.tag_alias[t]
             return (v, "alias") if v else (None, "dropped")
@@ -165,7 +177,7 @@ def check(ont, items, live=False):
         if home and home not in ont.coll_leaf:
             err["E2 collection missing or not a leaf"].append(f"{k} {home}")
         dom = ont.coll_leaf.get(home)
-        tags, models, labs = [], [], []
+        tags, parents, models, labs = [], [], [], []
         for raw in it["raw_tags"]:
             t, st = ont.norm_tag(raw)
             if st == "protected":
@@ -180,8 +192,15 @@ def check(ont, items, live=False):
                 info["dropped legacy tags"] += 1; continue
             elif st == "unknown":
                 err["E3 tag not in the vocabulary"].append(f"{k} {raw.strip()}"); cand[t] += 1; continue
-            elif st == "group":
-                err["E4 group code used as a tag"].append(f"{k} {t}"); continue
+            elif st == "numbered":
+                if live:
+                    err["E8 numbered tag from v1.5 or earlier (rename without the number)"].append(f"{k} {raw.strip()}")
+                else:
+                    info["numbered tags converted"] += 1
+            if t in ont.groups:
+                if t not in parents:
+                    parents.append(t)
+                continue
             if t in ont.defaults.get(dom, ()):
                 info["domain-default tags omitted (T5)"] += 1; continue
             if t not in tags:
@@ -192,25 +211,38 @@ def check(ont, items, live=False):
             info["model: tags"] += len(models)
         if len(labs) > ont.lab_limit:
             err[f"E5 more than {ont.lab_limit} lab: tags"].append(f"{k} {labs}")
-        per_axis = C.Counter(ont.leaf[t]["axis"] for t in tags)
+        # H1: every child tag needs its parent tag (drafts: added to the mapped output)
+        for t in tags:
+            p = ont.leaf[t]["parent"]
+            if p and p not in parents:
+                if live:
+                    err["E4 child tag without its parent tag (H1)"].append(f"{k} {t} → missing {p}")
+                else:
+                    info["parent tags added (H1)"] += 1
+                parents.append(p)
+        # limits count child/ungrouped tags plus parent tags used without any child
+        alone = [p for p in parents if not any(ont.leaf[t]["parent"] == p for t in tags)]
+        specific = tags + alone
+        per_axis = C.Counter(ont.leaf[t]["axis"] if t in ont.leaf else ont.groups[t] for t in specific)
         implied = len(ont.defaults.get(dom, ()))
         for ax, lim in ont.limits.items():
             if not isinstance(lim, list):
                 continue
             hi = lim[1]
             if per_axis[ax] > hi:
-                err[f"E5 more than {hi} {ax}: tags"].append(f"{k} {[t for t in tags if ont.leaf[t]['axis']==ax]}")
+                err[f"E5 more than {hi} {ax}: tags"].append(f"{k} {[t for t in specific if t.startswith(ax + ':')]}")
         if sum(per_axis.values()) + implied < ont.limits.get("min_total", 1):
             err["E6 no tags at all (defaults included)"].append(f"{k} {it['title']}")
         if live and it.get("legacy"):
             info["items with non-schema tags"] += 1
-        for t in tags:
+        for t in parents + tags:
             usage[t] += 1
+        for t in tags:
             if dom:
                 dom_tag[dom][t] += 1
         if dom:
             dom_n[dom] += 1; leaf_n[home] += 1
-        mapped.append(dict(key=k, title=it["title"], home=home, tags=" | ".join(tags), fit=it["fit"]))
+        mapped.append(dict(key=k, title=it["title"], home=home, tags=" | ".join(parents + tags), fit=it["fit"]))
 
     # aggregate rules
     agg = C.defaultdict(list)
@@ -230,7 +262,7 @@ def check(ont, items, live=False):
     if nonefit:
         agg["C4 no fitting collection (fit=none)"].append(f"{len(nonefit)} items: {', '.join(nonefit)}")
     for t, n in usage.most_common():
-        if n >= 40 and t in ont.leaf:      # lab: tags are not refined
+        if n >= 40 and t in ont.leaf:      # parent and lab: tags are not refined
             agg["T2 consider promoting to a group (tag ≥ 40)"].append(f"{t}: {n}")
     default_tags = set().union(*ont.defaults.values())
     for t, meta in ont.leaf.items():

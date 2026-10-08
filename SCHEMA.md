@@ -1,16 +1,17 @@
 # Zotero Library Classification Schema
 
-- **Version:** v1.5 (2026-10-08)
-- **Source of truth:** [`ontology.yaml`](ontology.yaml) defines the tag vocabulary, numbering, groups, collection scopes and boundaries, and domain defaults. This document explains the principles and rules behind it.
+- **Version:** v1.6 (2026-10-08)
+- **Source of truth:** [`ontology.yaml`](ontology.yaml) defines the tag vocabulary, tag hierarchy (parent → child), collection scopes and boundaries, and domain defaults. This document explains the principles and rules behind it.
 - **Checker:** `tools/check_schema.py` (read-only, see §6).
 
 The collection tree and vocabulary below are those of the original library (biomedical AI). The principles and rules apply to any field; the onboarding agent tailors `ontology.yaml` to a new library (see README).
 
 ### Changelog
+- **v1.6:** Dropped tag numbers (`m:1104 GAN` → `m:GAN`). Groups became parent tags that are applied to papers: a paper with a child tag must also carry its parent tag (H1, e.g. `m:GAN` + `m:generative`). Group Saved Searches are no longer needed. Renamed the `d:` group `clinical` to `clinical-data` (it clashed with the `d:clinical` tag). The single-group axes `type:` and `a:` have no parent tag. Checker: E4 is now "child tag without its parent tag"; new E8 flags leftover numbered tags.
 - **v1.5:** Added the `lab:` axis (closed vocabulary of 6 labs named by PI surname, tagged when the PI is an author).
 - **v1.4:** Added the `model:` axis (open vocabulary), the `00_Inbox` staging collection and its triage procedure, and TL;DR notes.
-- **v1.3:** Added 7 user-specified exception tags: `t:1803 fairness`, `t:9902 anomaly-detection`, `m:2001 data-augmentation`, `m:2002 noisy-imbalanced-labels` (new group m:20 data-centric), `t:1504 GRN`, `d:1004 cytology`, `t:1403 registration`.
-- **v1.2:** Widened collection 40. Added the placement rule for interpretability studies and widened x9_General to cover experimental techniques and resources. Restricted `t:1201 classification`.
+- **v1.3:** Added 7 user-specified exception tags: `t:fairness`, `t:anomaly-detection`, `m:data-augmentation`, `m:noisy-imbalanced-labels` (new group m:20 data-centric), `t:GRN`, `d:cytology`, `t:registration`.
+- **v1.2:** Widened collection 40. Added the placement rule for interpretability studies and widened x9_General to cover experimental techniques and resources. Restricted `t:classification`.
 - **v1.1:** Introduced tag numbering and the ontology (axis → group → tag). Expanded the vocabulary and relaxed per-axis tag limits. Added domain-default omission (T5) and boundary rules.
 - **v1:** Initial agreement.
 
@@ -20,12 +21,12 @@ The collection tree and vocabulary below are those of the original library (biom
 2. **Method, data/modality, task, paper type and disease/biology area are tags,** never collections.
 3. **Each paper has exactly one home collection:** a single leaf of the domain tree. `00_Inbox` is the only exception (§3).
 4. **No duplicate items.** To show a paper in several places, add the same item to more collections (macOS: drag adds, Cmd+drag moves).
-5. **Cross-axis views and tag groups are Saved Searches.**
+5. **Tags form a two-level hierarchy (parent → child).** A paper with a child tag always carries its parent tag too, so a group is browsed by clicking its parent tag. Cross-axis views are Saved Searches.
 6. Deciding question: *"What problem does this paper's main contribution solve?"* → home collection. Everything else is a tag.
 
 > Example: a paper that combines ST and H&E with prototype MIL to predict survival
-> → home `13_HistologyToMolecular` / tags `m:1302 prototype` `m:1301 MIL` `d:1101 ST` `t:1202 survival`
-> (`d:1001 H&E` is the pathology domain default, so it is omitted.)
+> → home `13_HistologyToMolecular` / tags `m:set-aggregation` `m:prototype` `m:MIL` `d:spatial-omics` `d:ST` `t:clinical-prediction` `t:survival`
+> (`d:H&E` is the pathology domain default, so it is omitted.)
 
 ---
 
@@ -53,25 +54,26 @@ Scopes, exclusions and boundary rules live in the `collections` section of `onto
 ### Key boundary rules (full list in `ontology.yaml`)
 - **11 vs 12:** An encoder pretrained for general use without task labels → 11. A model trained or tuned for specific labels → 12.
 - **11 vs 13:** Molecular data used only as a pretraining signal to build a general encoder → 11. Output is a molecular prediction → 13.
-- **13 vs 14:** 14 only when the output is text or the model is conversational / VQA / agentic. Survival prediction that fuses reports stays in 13 with `d:1701 text`.
+- **13 vs 14:** 14 only when the output is text or the model is conversational / VQA / agentic. Survival prediction that fuses reports stays in 13 with `d:text`.
 - **x9_General vs topic collections:** Reviews and perspectives go in the topic collection with a `type:` tag. x9 holds only papers covering the whole domain.
-- **18 vs topic collections:** A benchmark for a specific problem goes in that problem's collection with `type:1003 benchmark`. 18 holds only general-purpose resources not tied to one problem.
+- **18 vs topic collections:** A benchmark for a specific problem goes in that problem's collection with `type:benchmark`. 18 holds only general-purpose resources not tied to one problem.
 - **Domain vs 90_Methods:** An LLM or agent working on one domain's data → that domain. Cross-domain or general-purpose → 93.
-- **Interpretability studies:** Place them with the model being interpreted and add `t:1802 interpretability` (pathology FM interpretation → 11, MIL explanation → 12).
-- **Experimental techniques, databases, QC tools:** The domain's x9_General, with `type:1008 non-ML` or `type:1005 tool`.
-- **Domains without a home yet** (here: non-pathology medical imaging): place by method in 9x and track with a `d:` tag (`d:1602 medical-image`) until C4 is met.
+- **Interpretability studies:** Place them with the model being interpreted and add `t:interpretability` (pathology FM interpretation → 11, MIL explanation → 12).
+- **Experimental techniques, databases, QC tools:** The domain's x9_General, with `type:non-ML` or `type:tool`.
+- **Domains without a home yet** (here: non-pathology medical imaging): place by method in 9x and track with a `d:` tag (`d:medical-image`) until C4 is met.
 
 ---
 
 ## 2. Tag system
 
-### Format: `<axis>:<GGLL> <name>`
-- Examples: `m:1104 GAN`, `t:1001 expr-prediction`, `type:1001 review`.
-- **GG:** group number within the axis (10–98). 99 holds standalone tags that belong to no group.
-- **LL:** tag number within the group (01–99).
-- **`LL=00` denotes the group itself.** Groups are never applied as tags. They exist only as Saved Searches of the same name (e.g. `m:1100 generative`).
-- Numbers are sparse. When a tag moves to another group, rename it with "Rename Tag" in Zotero's tag selector.
-- The tag selector sorts by name, so tags of the same group sit together. `/unread` and `/star` start with `/` and appear at the top.
+### Format: `<axis>:<name>`
+- Examples: `m:GAN`, `t:expr-prediction`, `type:review`. No numbers.
+- **Parent and child tags.** Each group in `ontology.yaml` is a **parent tag** named after the group (`m:generative`); the tags listed under it are its **child tags** (`m:GAN`, `m:diffusion`). Tags under `ungrouped` have no parent.
+- **H1. A paper with a child tag must also carry its parent tag.** `m:GAN` → also `m:generative`. Several children of one parent share a single parent tag. A parent tag alone is allowed when no child fits.
+- Parent tags do not count toward the per-axis limits below, except a parent used without any of its children.
+- Group and tag names are unique within an axis.
+- When a tag moves to another group, swap the parent tag on its papers.
+- The tag selector sorts by name. `/unread` and `/star` start with `/` and appear at the top.
 
 ### Axes
 
@@ -85,34 +87,33 @@ Scopes, exclusions and boundary rules live in the `collections` section of `onto
 | `model:` | Name of the proposed model (open vocabulary, see below) | 0–2 |
 | `lab:` | Lab whose PI is an author (closed vocabulary, see below) | 0–3 |
 
-- Every paper needs **at least 1** numbered tag. An omitted domain default counts as one.
-- `t:1201 classification` is used only when no more specific `t:` tag applies.
+- Every paper needs **at least 1** `m:`/`d:`/`t:`/`type:`/`a:` tag. An omitted domain default counts as one.
+- `t:classification` is used only when no more specific `t:` tag applies.
 - Leave an axis empty when nothing fits. Do not invent meaningless tags. For example, a paper that merely uses a transformer gets no `m:` tag.
 
-### Groups (summary; full definitions in `ontology.yaml`)
-- **m:** 10 representation-learning · 11 generative · 12 adaptation-setting · 13 set-aggregation · 14 graph · 15 architecture · 16 language-models · 17 multimodal · 18 decision-causal · 19 interpretability-methods · 20 data-centric · 99 standalone
-- **d:** 10 tissue-imaging · 11 spatial-omics · 12 single-cell · 13 bulk-molecular · 14 molecules-proteins · 15 clinical · 16 general-imaging · 17 structured-language
-- **t:** 10 molecular-prediction · 11 batch-effect · 12 clinical-prediction · 13 synthesis-reconstruction · 14 cell-tissue-analysis · 15 omics-analysis · 16 molecular-design · 17 language-tasks · 18 trustworthiness · 99 standalone
-- **type:** 10 paper-type
-- **a:** 10 biology-area
+### Parent tags (summary; full definitions in `ontology.yaml`)
+- **m:** representation-learning · generative · adaptation-setting · set-aggregation · graph · architecture · language-models · multimodal · decision-causal · interpretability-methods · data-centric (ungrouped: ensemble)
+- **d:** tissue-imaging · spatial-omics · single-cell · bulk-molecular · molecules-proteins · clinical-data · general-imaging · structured-language
+- **t:** molecular-prediction · batch-effect · clinical-prediction · synthesis-reconstruction · cell-tissue-analysis · omics-analysis · molecular-design · language-tasks · trustworthiness (ungrouped: representation, anomaly-detection)
+- **type:**, **a:** no parent tags (all tags ungrouped)
 
-### `model:` axis (open vocabulary, unnumbered)
+### `model:` axis (open vocabulary)
 - Format: `model:<official name>`, e.g. `model:TITAN`, `model:CONCH`, `model:CHIEF`. Replace spaces with hyphens (`model:EXAONE-Path-2.0`).
 - Apply only when the paper **itself proposes** the model or tool **and its name appears in the title or abstract.** Do not tag baselines, datasets or benchmarks.
 - The same name may appear on several papers (e.g. two unrelated papers both called ProtoMIL).
 - Hand-made model-name tags that predate the schema are kept (converted to this format) even if the abstract does not mention the name.
 
-### `lab:` axis (closed vocabulary, unnumbered)
+### `lab:` axis (closed vocabulary)
 - Format: `lab:<PI surname>`, e.g. `lab:Mahmood`, `lab:Chen`. Only the labs listed under `labs` in `ontology.yaml` are allowed. Add a lab there first.
 - Apply when the PI appears **anywhere in the author list** (corresponding status is not checked).
 - Match the first name too, and for common names (e.g. Hao Chen) check the affiliation so namesakes are not tagged.
-- Lab tags do not count toward the "at least 1 numbered tag" minimum and are not subject to T1–T3.
+- Lab tags do not count toward the "at least 1 tag" minimum and are not subject to T1–T3 or H1.
 
 ### User-specified exceptions (`status: user-exception`)
 These tags fall below the T1 threshold but are kept at the user's request. They are exempt from T3 pruning. They are marked in `ontology.yaml`.
 
 ### Typing tags in Zotero (checked against the Zotero 9.0.6 source)
-- Tag **autocomplete is prefix matching** (`name LIKE 'input%'`). Typing `GAN` does not suggest `m:1104 GAN`. Start with `m:11` or `m:1104`, or type `m:` and pick from the list, which sorts by group.
+- Tag **autocomplete is prefix matching** (`name LIKE 'input%'`). Typing `GAN` does not suggest `m:GAN`. Type `m:G` (or just `m:` and pick from the alphabetical list).
 - The tag selector **filter is substring matching** (case-insensitive), so `GAN` finds it there.
 
 ---
@@ -130,7 +131,7 @@ These tags fall below the T1 threshold but are kept at the user's request. They 
 - Drop new papers into `00_Inbox` without worrying about classification.
 - When the user asks to triage ("triage the inbox", "정리해줘"), handle each Inbox paper as follows:
   1. Read the title and abstract (the first pages of the PDF if the abstract is missing or thin).
-  2. Choose one home collection, the numbered tags and any `model:` and `lab:` tags. Draft the TL;DR note (§5-N).
+  2. Choose one home collection, the tags (each child tag with its parent tag, H1) and any `model:` and `lab:` tags. Draft the TL;DR note (§5-N).
   3. Check for duplicates. Merge them under the rules above.
   4. For a preprint, check whether a published version exists (§5-P).
   5. Show the change list and apply only after confirmation.
@@ -166,27 +167,28 @@ These tags fall below the T1 threshold but are kept at the user's request. They 
 1. It would apply to **5 or more** papers.
 2. There is a real need to filter by it or build a Saved Search on it.
 3. The same view cannot be built from existing tags.
-4. **It has a group.** If no group fits, first consider whether the axis is wrong. Use group 99 only as a last resort.
+4. **It has a parent.** If no group fits, first consider whether the axis is wrong. Use `ungrouped` only as a last resort.
 
 The user may override this explicitly (`status: user-exception`).
 
 ### T2. Refinement (hierarchy)
-- Apply only the **most specific** tag. Query broader concepts through group Saved Searches.
-- When a tag has **40 or more** papers and contains a sub-type worth filtering with **10 or more** papers, **promote** the tag to a group and split it. Groups must not nest, so a promoted group gets a new group number.
+- Apply the **most specific** child tag together with its parent tag (H1). Do not add sibling tags just to describe something broader; the parent tag covers that.
+- When a tag has **40 or more** papers and contains a sub-type worth filtering with **10 or more** papers, **promote** the tag to a group and split it. The hierarchy has only two levels, so a promoted group becomes a new parent tag on its axis (rename it if the name would clash) and its papers get the new parent plus their new child tags.
 - If there is no sub-type worth filtering, leave the tag as is even above 40 (the checker only reports it as a candidate).
 
 ### T3. Merging and pruning tags
-- A tag with **fewer than 3** papers **6 months** after it was added is merged into another tag of the same group or dropped.
+- A child or ungrouped tag with **fewer than 3** papers **6 months** after it was added is merged into another tag of the same group or dropped (its papers keep the parent tag).
 - User-exception tags and domain-default tags are exempt.
 - Tags with the same meaning are merged immediately.
 
 ### T4. Vocabulary management
-- `ontology.yaml` is the source of truth. Make additions, changes and renumbering there, and log them in this document's changelog.
+- `ontology.yaml` is the source of truth. Make additions, changes and moves there, and log them in this document's changelog.
 - Never apply a tag that is not in the vocabulary. Track candidates in the checker's "candidate tags" list and judge them against T1 at the quarterly review.
 - Automatic tags (arXiv categories, journal subject headings) are not part of the vocabulary. Keep Zotero's auto-tagging off (Settings → General → "Automatically tag items with keywords and subject headings").
 
 ### T5. Omitting domain defaults
 - A tag that applies to **70% or more** of a domain's papers is that domain's default. Omit it on papers whose home is in that domain.
+- The omitted default does not bring in its parent tag (a pathology paper gets `d:tissue-imaging` only if it also has `d:IHC` etc.).
 - Defaults are listed under `defaults` in `ontology.yaml`. Apply them normally to papers in other domains.
 
 ### Recording decisions
@@ -236,10 +238,11 @@ python3 tools/check_schema.py --live --out report.md
   - E1: not exactly one home collection
   - E2: collection does not exist or is not a leaf
   - E3: tag not in the vocabulary
-  - E4: group code used as a tag
+  - E4: child tag without its parent tag (H1). In `--draft` mode the missing parents are added to the `--mapped` output instead
   - E5: too many tags on an axis
   - E6: no tags at all
   - E7: has a home collection but is still in `00_Inbox`
+  - E8: numbered tag from v1.5 or earlier (`m:1104 GAN`). In `--draft` mode it is converted instead
 - **Aggregate rules:** C1–C4, T2, T3, T5, and candidate-tag counts
 
 Cadence:
@@ -260,6 +263,6 @@ The order that worked for the original library. Every step that writes to the li
 | 3 | Back up collections and tags to JSON. Move the old tree to `_old`, build the new tree, apply memberships and tags |
 | 4 | Run `check_schema.py --live` until it reports 0 errors, then delete `_old` |
 | 5 | Remove automatic tags (excluding `/unread`, `/star`) and turn off auto-tagging |
-| 6 | Create Saved Searches: one per group code (`xx00`), plus cross views as needed |
+| 6 | Create Saved Searches for cross views as needed (groups are browsed through their parent tags) |
 | 7 | Optional: replace preprints with published versions (§5-P) |
 | 8 | Optional: write TL;DR notes (§5-N) |
