@@ -7,7 +7,7 @@
 The collection tree and vocabulary below are those of the original library (biomedical AI). The principles and rules apply to any field; the onboarding agent tailors `ontology.yaml` to a new library (see README).
 
 ### Changelog
-- **v1.6:** Dropped tag numbers (`m:1104 GAN` → `m:GAN`). Groups became parent tags that are applied to papers: a paper with a child tag must also carry its parent tag (H1, e.g. `m:GAN` + `m:generative`). Group Saved Searches are no longer needed. Renamed the `d:` group `clinical` to `clinical-data` (it clashed with the `d:clinical` tag). The single-group axes `type:` and `a:` have no parent tag. Checker: E4 is now "child tag without its parent tag"; new E8 flags leftover numbered tags.
+- **v1.6:** Dropped tag numbers (`m:1104 GAN` → `m:GAN`). Groups became parent tags that are applied to papers: a paper with a child tag must also carry its parent tag (H1, e.g. `m:GAN` + `m:generative`). Group Saved Searches now match the parent tag exactly (`tag is m:generative`) and are named after it. Renamed the `d:` group `clinical` to `clinical-data` (it clashed with the `d:clinical` tag). The single-group axes `type:` and `a:` have no parent tag. Checker: E4 is now "child tag without its parent tag"; new E8 flags leftover numbered tags.
 - **v1.5:** Added the `lab:` axis (closed vocabulary of 6 labs named by PI surname, tagged when the PI is an author).
 - **v1.4:** Added the `model:` axis (open vocabulary), the `00_Inbox` staging collection and its triage procedure, and TL;DR notes.
 - **v1.3:** Added 7 user-specified exception tags: `t:fairness`, `t:anomaly-detection`, `m:data-augmentation`, `m:noisy-imbalanced-labels` (new group m:20 data-centric), `t:GRN`, `d:cytology`, `t:registration`.
@@ -21,7 +21,7 @@ The collection tree and vocabulary below are those of the original library (biom
 2. **Method, data/modality, task, paper type and disease/biology area are tags,** never collections.
 3. **Each paper has exactly one home collection:** a single leaf of the domain tree. `00_Inbox` is the only exception (§3).
 4. **No duplicate items.** To show a paper in several places, add the same item to more collections (macOS: drag adds, Cmd+drag moves).
-5. **Tags form a two-level hierarchy (parent → child).** A paper with a child tag always carries its parent tag too, so a group is browsed by clicking its parent tag. Cross-axis views are Saved Searches.
+5. **Tags form a two-level hierarchy (parent → child).** A paper with a child tag always carries its parent tag too, so a group is browsed by clicking its parent tag or through the Saved Search of the same name. Cross-axis views are Saved Searches.
 6. Deciding question: *"What problem does this paper's main contribution solve?"* → home collection. Everything else is a tag.
 
 > Example: a paper that combines ST and H&E with prototype MIL to predict survival
@@ -263,6 +263,6 @@ The order that worked for the original library. Every step that writes to the li
 | 3 | Back up collections and tags to JSON. Move the old tree to `_old`, build the new tree, apply memberships and tags |
 | 4 | Run `check_schema.py --live` until it reports 0 errors, then delete `_old` |
 | 5 | Remove automatic tags (excluding `/unread`, `/star`) and turn off auto-tagging |
-| 6 | Create Saved Searches for cross views as needed (groups are browsed through their parent tags) |
+| 6 | Create Saved Searches: one per parent tag (named after it, condition `tag is <parent>`), plus cross views as needed |
 | 7 | Optional: replace preprints with published versions (§5-P) |
 | 8 | Optional: write TL;DR notes (§5-N) |
