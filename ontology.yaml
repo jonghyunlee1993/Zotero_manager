@@ -1,6 +1,6 @@
 # Zotero library ontology: the single source of truth for the tag vocabulary and the collection tree.
 # The rules are explained in SCHEMA.md. When you change this file, add an entry to the SCHEMA.md changelog.
-version: "1.4"
+version: "1.5"
 updated: 2026-10-08
 
 # ─────────────────────────────────────────────────────────────
@@ -21,6 +21,19 @@ open_axes:
     format: "model:<official name>"     # e.g. model:TITAN, model:CONCH, model:CHIEF
     limit: [0, 2]
     rule: "Apply only when the paper itself proposes the model or tool and its official name appears in the title or abstract. Do not tag baselines used for evaluation. Dataset and benchmark names are not models. Keep the paper's spelling and replace spaces with hyphens"
+
+# Lab axis (closed vocabulary, unnumbered): only the labs listed here, named by the PI's surname.
+labs:
+  format: "lab:<PI surname>"
+  limit: [0, 3]
+  rule: "Apply when the lab's PI appears anywhere in the author list. Check first names and, for common names, the affiliation so namesakes are not tagged"
+  tags:
+    "lab:Zou":      {pi: "James Zou", affiliation: "Stanford"}
+    "lab:Chen":     {pi: "Hao Chen", affiliation: "HKUST"}
+    "lab:Xie":      {pi: "Weidi Xie", affiliation: "Shanghai Jiao Tong University"}
+    "lab:Mahmood":  {pi: "Faisal Mahmood", affiliation: "Harvard / Mass General Brigham"}
+    "lab:Huang":    {pi: "Zhi Huang", affiliation: "University of Pennsylvania (formerly Stanford)"}
+    "lab:Kather":   {pi: "Jakob Nikolas Kather", affiliation: "TU Dresden"}
 
 inbox: 00_Inbox       # Staging collection for new papers. Triage moves papers out of it
 

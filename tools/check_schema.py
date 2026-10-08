@@ -15,6 +15,7 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 TAG_RE = re.compile(r"^(m|d|t|type|a):(\d{2})(\d{2}) (.+)$")
 MODEL_RE = re.compile(r"^model:\S+$")
+LAB_RE = re.compile(r"^lab:\S+$")
 API = "http://localhost:23119/api/users/0"
 
 
@@ -52,9 +53,12 @@ class Ontology:
         self.reviews = o.get("reviews", []) or []
         self.model_limit = ((o.get("open_axes") or {}).get("model") or {}).get("limit", [0, 2])[1]
         self.inbox = o.get("inbox")
+        labs = o.get("labs") or {}
+        self.labs = set(labs.get("tags") or {})
+        self.lab_limit = labs.get("limit", [0, 3])[1]
 
     def norm_tag(self, raw):
-        """raw tag → (canonical tag | None, status). status: ok|alias|dropped|unknown|group|protected|model"""
+        """raw tag → (canonical tag | None, status). status: ok|alias|dropped|unknown|group|protected|model|lab"""
         t = raw.strip().lstrip("+").strip()
         if not t:
             return None, "empty"
@@ -62,6 +66,8 @@ class Ontology:
             return t, "protected"
         if MODEL_RE.match(t):
             return t, "model"
+        if LAB_RE.match(t):
+            return t, ("lab" if t in self.labs else "unknown")
         if t in self.leaf:
             return t, "ok"
         if t in self.groups:
@@ -131,8 +137,8 @@ def load_live(ont):
             homes.append(p[-1])
         tags = [t["tag"] for t in d.get("tags", [])]
         items.append(dict(key=it["key"], title=d.get("title", "")[:60], homes=homes, projects=projects,
-                          raw_tags=[t for t in tags if TAG_RE.match(t) or MODEL_RE.match(t) or t in ont.protected],
-                          legacy=[t for t in tags if not (TAG_RE.match(t) or MODEL_RE.match(t)) and t not in ont.protected],
+                          raw_tags=[t for t in tags if TAG_RE.match(t) or MODEL_RE.match(t) or LAB_RE.match(t) or t in ont.protected],
+                          legacy=[t for t in tags if not (TAG_RE.match(t) or MODEL_RE.match(t) or LAB_RE.match(t)) and t not in ont.protected],
                           inbox=inbox,
                           fit="", src="live"))
     return items
@@ -159,13 +165,15 @@ def check(ont, items, live=False):
         if home and home not in ont.coll_leaf:
             err["E2 collection missing or not a leaf"].append(f"{k} {home}")
         dom = ont.coll_leaf.get(home)
-        tags, models = [], []
+        tags, models, labs = [], [], []
         for raw in it["raw_tags"]:
             t, st = ont.norm_tag(raw)
             if st == "protected":
                 continue
             if st == "model":
                 models.append(t); continue
+            if st == "lab":
+                labs.append(t); usage[t] += 1; continue
             if st == "alias":
                 info["converted via alias"] += 1
             elif st == "dropped":
@@ -182,6 +190,8 @@ def check(ont, items, live=False):
             err[f"E5 more than {ont.model_limit} model: tags"].append(f"{k} {models}")
         if models:
             info["model: tags"] += len(models)
+        if len(labs) > ont.lab_limit:
+            err[f"E5 more than {ont.lab_limit} lab: tags"].append(f"{k} {labs}")
         per_axis = C.Counter(ont.leaf[t]["axis"] for t in tags)
         implied = len(ont.defaults.get(dom, ()))
         for ax, lim in ont.limits.items():
@@ -220,7 +230,7 @@ def check(ont, items, live=False):
     if nonefit:
         agg["C4 no fitting collection (fit=none)"].append(f"{len(nonefit)} items: {', '.join(nonefit)}")
     for t, n in usage.most_common():
-        if n >= 40:
+        if n >= 40 and t in ont.leaf:      # lab: tags are not refined
             agg["T2 consider promoting to a group (tag ≥ 40)"].append(f"{t}: {n}")
     default_tags = set().union(*ont.defaults.values())
     for t, meta in ont.leaf.items():

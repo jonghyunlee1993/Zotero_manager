@@ -1,12 +1,13 @@
 # Zotero Library Classification Schema
 
-- **Version:** v1.4 (2026-10-08)
+- **Version:** v1.5 (2026-10-08)
 - **Source of truth:** [`ontology.yaml`](ontology.yaml) defines the tag vocabulary, numbering, groups, collection scopes and boundaries, and domain defaults. This document explains the principles and rules behind it.
 - **Checker:** `tools/check_schema.py` (read-only, see §6).
 
 The collection tree and vocabulary below are those of the original library (biomedical AI). The principles and rules apply to any field; the onboarding agent tailors `ontology.yaml` to a new library (see README).
 
 ### Changelog
+- **v1.5:** Added the `lab:` axis (closed vocabulary of 6 labs named by PI surname, tagged when the PI is an author).
 - **v1.4:** Added the `model:` axis (open vocabulary), the `00_Inbox` staging collection and its triage procedure, and TL;DR notes.
 - **v1.3:** Added 7 user-specified exception tags: `t:1803 fairness`, `t:9902 anomaly-detection`, `m:2001 data-augmentation`, `m:2002 noisy-imbalanced-labels` (new group m:20 data-centric), `t:1504 GRN`, `d:1004 cytology`, `t:1403 registration`.
 - **v1.2:** Widened collection 40. Added the placement rule for interpretability studies and widened x9_General to cover experimental techniques and resources. Restricted `t:1201 classification`.
@@ -82,6 +83,7 @@ Scopes, exclusions and boundary rules live in the `collections` section of `onto
 | `type:` | Paper type (omitted for ordinary method papers) | 0–2 |
 | `a:` | Disease / biology area (optional). No oncology tag: it would apply to almost everything | 0–2 |
 | `model:` | Name of the proposed model (open vocabulary, see below) | 0–2 |
+| `lab:` | Lab whose PI is an author (closed vocabulary, see below) | 0–3 |
 
 - Every paper needs **at least 1** numbered tag. An omitted domain default counts as one.
 - `t:1201 classification` is used only when no more specific `t:` tag applies.
@@ -99,6 +101,12 @@ Scopes, exclusions and boundary rules live in the `collections` section of `onto
 - Apply only when the paper **itself proposes** the model or tool **and its name appears in the title or abstract.** Do not tag baselines, datasets or benchmarks.
 - The same name may appear on several papers (e.g. two unrelated papers both called ProtoMIL).
 - Hand-made model-name tags that predate the schema are kept (converted to this format) even if the abstract does not mention the name.
+
+### `lab:` axis (closed vocabulary, unnumbered)
+- Format: `lab:<PI surname>`, e.g. `lab:Mahmood`, `lab:Chen`. Only the labs listed under `labs` in `ontology.yaml` are allowed. Add a lab there first.
+- Apply when the PI appears **anywhere in the author list** (corresponding status is not checked).
+- Match the first name too, and for common names (e.g. Hao Chen) check the affiliation so namesakes are not tagged.
+- Lab tags do not count toward the "at least 1 numbered tag" minimum and are not subject to T1–T3.
 
 ### User-specified exceptions (`status: user-exception`)
 These tags fall below the T1 threshold but are kept at the user's request. They are exempt from T3 pruning. They are marked in `ontology.yaml`.
@@ -122,7 +130,7 @@ These tags fall below the T1 threshold but are kept at the user's request. They 
 - Drop new papers into `00_Inbox` without worrying about classification.
 - When the user asks to triage ("triage the inbox", "정리해줘"), handle each Inbox paper as follows:
   1. Read the title and abstract (the first pages of the PDF if the abstract is missing or thin).
-  2. Choose one home collection, the numbered tags and any `model:` tag. Draft the TL;DR note (§5-N).
+  2. Choose one home collection, the numbered tags and any `model:` and `lab:` tags. Draft the TL;DR note (§5-N).
   3. Check for duplicates. Merge them under the rules above.
   4. For a preprint, check whether a published version exists (§5-P).
   5. Show the change list and apply only after confirmation.
