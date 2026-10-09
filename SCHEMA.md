@@ -1,12 +1,13 @@
 # Zotero Library Classification Schema
 
-- **Version:** v1.6 (2026-10-08)
+- **Version:** v1.7 (2026-10-09)
 - **Source of truth:** [`ontology.yaml`](ontology.yaml) defines the tag vocabulary, tag hierarchy (parent → child), collection scopes and boundaries, and domain defaults. This document explains the principles and rules behind it.
 - **Checker:** `tools/check_schema.py` (read-only, see §6).
 
 The collection tree and vocabulary below are those of the original library (biomedical AI). The principles and rules apply to any field; the onboarding agent tailors `ontology.yaml` to a new library (see README).
 
 ### Changelog
+- **v1.7:** Added `00_MyPublications` as a "view" collection (`views` in `ontology.yaml`): the user's own papers also sit here besides their one home collection. The checker ignores it when counting homes (E1/E2).
 - **v1.6:** Dropped tag numbers (`m:1104 GAN` → `m:GAN`). Groups became parent tags that are applied to papers: a paper with a child tag must also carry its parent tag (H1, e.g. `m:GAN` + `m:generative`). Group Saved Searches now match the parent tag exactly (`tag is m:generative`) and are named after it. Renamed the `d:` group `clinical` to `clinical-data` (it clashed with the `d:clinical` tag). The single-group axes `type:` and `a:` have no parent tag. Checker: E4 is now "child tag without its parent tag"; new E8 flags leftover numbered tags.
 - **v1.5:** Added the `lab:` axis (closed vocabulary of 6 labs named by PI surname, tagged when the PI is an author).
 - **v1.4:** Added the `model:` axis (open vocabulary), the `00_Inbox` staging collection and its triage procedure, and TL;DR notes.
@@ -19,7 +20,7 @@ The collection tree and vocabulary below are those of the original library (biom
 
 1. **Collections use exactly one axis:** `domain → problem` (what problem the paper tries to solve).
 2. **Method, data/modality, task, paper type and disease/biology area are tags,** never collections.
-3. **Each paper has exactly one home collection:** a single leaf of the domain tree. `00_Inbox` is the only exception (§3).
+3. **Each paper has exactly one home collection:** a single leaf of the domain tree. `00_Inbox` is the only exception (§3). `00_MyPublications` is an extra view, not a home (§3).
 4. **No duplicate items.** To show a paper in several places, add the same item to more collections (macOS: drag adds, Cmd+drag moves).
 5. **Tags form a two-level hierarchy (parent → child).** A paper with a child tag always carries its parent tag too, so a group is browsed by clicking its parent tag or through the Saved Search of the same name. Cross-axis views are Saved Searches.
 6. Deciding question: *"What problem does this paper's main contribution solve?"* → home collection. Everything else is a tag.
@@ -36,6 +37,7 @@ Scopes, exclusions and boundary rules live in the `collections` section of `onto
 
 ```
 00_Inbox                     Staging area for new papers (§3)
+00_MyPublications            View of the user's own papers; they also have a home below (§3)
 10_Pathology/
   11_FoundationModels · 12_SlideRepresentation · 13_HistologyToMolecular
   14_LanguageReportsAgents · 15_Robustness · 16_CellLevel
@@ -137,6 +139,10 @@ These tags fall below the T1 threshold but are kept at the user's request. They 
   5. Show the change list and apply only after confirmation.
   6. Remove triaged papers from the Inbox. Never touch `/unread` or `/star`.
 - The checker counts papers that are only in the Inbox as "awaiting triage", and reports papers that have a home collection but are still in the Inbox as an error (E7).
+
+### 00_MyPublications: the user's own papers
+- A paper written by the user sits here **in addition to** its home collection and is classified like any other paper (one home, tags, TL;DR).
+- It is listed under `views` in `ontology.yaml`. The checker ignores it when counting homes, so it never triggers E1/E2. Never choose it as a home.
 
 ## 4. Evolving the taxonomy
 

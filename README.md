@@ -17,6 +17,7 @@ The rules are in [SCHEMA.md](SCHEMA.md). The vocabulary and collection tree are 
 | `ontology.yaml` | Source of truth: tag vocabulary, collection tree, domain defaults, recorded decisions |
 | `CLAUDE.md` | Instructions for the Claude Code agent working in this folder |
 | `.claude/settings.json` | Session hook that loads the environment automatically |
+| `.claude/skills/zotero-manager/SKILL.md` | The `zotero-manager` skill: repo location, env, rule locations, working method. Symlink it into `~/.claude/skills/` to use it from any folder |
 | `.claude/agents/ontology-tailor.md` | Subagent that drafts an ontology for your library |
 | `setup.sh` | One-time setup (conda env, dependencies, API key) |
 | `tools/env.sh` | `source` it to activate the env and load credentials |

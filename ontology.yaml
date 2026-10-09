@@ -1,7 +1,7 @@
 # Zotero library ontology: the single source of truth for the tag vocabulary and the collection tree.
 # The rules are explained in SCHEMA.md. When you change this file, add an entry to the SCHEMA.md changelog.
-version: "1.6"
-updated: 2026-10-08
+version: "1.7"
+updated: 2026-10-09
 
 # ─────────────────────────────────────────────────────────────
 # Tag format: "<axis>:<name>"   e.g. m:GAN, d:H&E, type:review   (no numbers)
@@ -37,6 +37,7 @@ labs:
     "lab:Kather":   {pi: "Jakob Nikolas Kather", affiliation: "TU Dresden"}
 
 inbox: 00_Inbox       # Staging collection for new papers. Triage moves papers out of it
+views: [00_MyPublications]   # Extra-membership collections: a paper also sits here besides its home collection. Not a home, ignored by E1/E2
 
 limits:        # tags per paper, parent tags not counted (any axis may be empty, but at least 1 in total; an omitted domain default counts as 1)
   m: [0, 3]

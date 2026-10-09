@@ -61,6 +61,7 @@ class Ontology:
         self.reviews = o.get("reviews", []) or []
         self.model_limit = ((o.get("open_axes") or {}).get("model") or {}).get("limit", [0, 2])[1]
         self.inbox = o.get("inbox")
+        self.views = set(o.get("views") or [])   # extra-membership collections, ignored when counting homes
         labs = o.get("labs") or {}
         self.labs = set(labs.get("tags") or {})
         self.lab_limit = labs.get("limit", [0, 3])[1]
@@ -145,6 +146,8 @@ def load_live(ont):
                 continue
             if ont.inbox and p[0] == ont.inbox:
                 projects.append(p[0]); inbox = True
+                continue
+            if p[0] in ont.views:
                 continue
             homes.append(p[-1])
         tags = [t["tag"] for t in d.get("tags", [])]
